@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-import "@openzeppelin/contracts@4.4.2/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts@4.4.2/access/AccessControl.sol";
-import "@openzeppelin/contracts@4.4.2/token/ERC1155/extensions/ERC1155Burnable.sol";
-import "@openzeppelin/contracts@4.4.2/token/ERC1155/extensions/ERC1155Supply.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 
 contract GameItem is ERC1155, AccessControl, ERC1155Burnable, ERC1155Supply {
     bytes32 public constant URI_SETTER_ROLE = keccak256("URI_SETTER_ROLE");
