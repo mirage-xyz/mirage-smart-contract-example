@@ -16,8 +16,8 @@ async function main() {
   // We get the contract to deploy
   const GameItem = await hre.ethers.getContractFactory("GameItem");
   const gameItem = await GameItem.deploy();
-
-  console.log(await gameItem.deployed());
+  const r1 = await gameItem.deployed();
+  console.log(r1.deployTransaction.hash);
 
   console.log("GameItem deployed to:", gameItem.address);
 
@@ -25,7 +25,8 @@ async function main() {
   const GameCharacter = await hre.ethers.getContractFactory("GameCharacter");
   const gameCharacter = await GameCharacter.deploy(gameItem.address);
 
-  console.log(await gameCharacter.deployed());
+  const r2 = await gameCharacter.deployed();
+  console.log(r2.deployTransaction.hash);
 
   console.log("GameCharacter deployed to:", gameCharacter.address);
 }

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "hardhat/console.sol";
 
 
 
@@ -16,9 +17,9 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
 
     IERC1155 gameItemContract;
 
-    mapping(address => uint256) _hats;
-    mapping(address => uint256) _shoes;
-    mapping(address => uint256) _glasses;
+    mapping(uint256 => uint256) _hats;
+    mapping(uint256 => uint256) _shoes;
+    mapping(uint256 => uint256) _glasses;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
@@ -37,19 +38,24 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
 
 
     ///////////////// Wearing Function ////////////////////
-    event HatChanged(address owner, uint256 oldTokenId, uint256 newTokenId);
-    function changeHat(uint256 tokenId) public {
-        require(_isHat(tokenId), "Item should be a hat");
-        uint256 oldTokenId = _hats[msg.sender];
-        if (oldTokenId > 0) {
-            gameItemContract.safeTransferFrom(address(this), msg.sender, oldTokenId, 1, "");
+    event HatChanged(uint256 characterId, uint256 oldHatId, uint256 newHatId);
+    function changeHat(uint256 characterId, uint256 newHatId) public {
+        require(_isHat(newHatId), "Item should be a hat");
+        require(ownerOf(characterId) == msg.sender, "Should be owner of character");
+
+        uint256 oldHatId = _hats[characterId];
+        if (oldHatId > 0) {
+            gameItemContract.safeTransferFrom(address(this), msg.sender, oldHatId, 1, "");
         }
-        gameItemContract.safeTransferFrom(msg.sender, address(this), tokenId, 1, "");
-        _hats[msg.sender] = tokenId;
-        emit HatChanged(msg.sender, oldTokenId, tokenId);
+        if (newHatId > 0) {
+            gameItemContract.safeTransferFrom(msg.sender, address(this), newHatId, 1, "");
+        }
+        _hats[characterId] = newHatId;
+
+        emit HatChanged(characterId, oldHatId, newHatId);
     }
-    function getHat(address owner) public view returns(uint256) {
-        return _hats[owner];
+    function getHat(uint256 characterId) public view returns(uint256) {
+        return _hats[characterId];
     }
     function _isHat(uint256 tokenId) internal pure returns(bool) {
         if (tokenId <= 0x0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -60,19 +66,24 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return false;
     }
 
-    event ShoesChanged(address owner, uint256 oldTokenId, uint256 newTokenId);
-    function changeShoes(uint256 tokenId) public {
-        require(_isShoe(tokenId), "Item should be shoes");
-        uint256 oldTokenId = _shoes[msg.sender];
-        if (oldTokenId > 0) {
-            gameItemContract.safeTransferFrom(address(this), msg.sender, oldTokenId, 1, "");
+    event ShoesChanged(uint256 characterId, uint256 oldShoesId, uint256 newShoesId);
+    function changeShoes(uint256 characterId, uint256 newShoesId) public {
+        require(_isShoe(newShoesId), "Item should be shoes");
+        require(ownerOf(characterId) == msg.sender, "Should be owner of character");
+
+        uint256 oldShoesId = _shoes[characterId];
+        if (oldShoesId > 0) {
+            gameItemContract.safeTransferFrom(address(this), msg.sender, oldShoesId, 1, "");
         }
-        gameItemContract.safeTransferFrom(msg.sender, address(this), tokenId, 1, "");
-        _shoes[msg.sender] = tokenId;
-        emit ShoesChanged(msg.sender, oldTokenId, tokenId);
+        if (newShoesId > 0) {
+            gameItemContract.safeTransferFrom(msg.sender, address(this), newShoesId, 1, "");
+        }
+        _shoes[characterId] = newShoesId;
+
+        emit ShoesChanged(characterId, oldShoesId, newShoesId);
     }
-    function getShoes(address owner) public view returns(uint256) {
-        return _shoes[owner];
+    function getShoes(uint256 characterId) public view returns(uint256) {
+        return _shoes[characterId];
     }
     function _isShoe(uint256 tokenId) internal pure returns(bool) {
         if (tokenId <= 0x0002ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -84,19 +95,24 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     }
 
     
-    event GlassesChanged(address owner, uint256 oldTokenId, uint256 newTokenId);
-    function changeGlasses(uint256 tokenId) public {
-        require(_isGlasses(tokenId), "Item should be glasses");
-        uint256 oldTokenId = _glasses[msg.sender];
-        if (oldTokenId > 0) {
-            gameItemContract.safeTransferFrom(address(this), msg.sender, oldTokenId, 1, "");
+    event GlassesChanged(uint256 characterId, uint256 oldGlassesId, uint256 newGlassesId);
+    function changeGlasses(uint256 characterId, uint256 newGlassesId) public {
+        require(_isGlasses(newGlassesId), "Item should be glasses");
+        require(ownerOf(characterId) == msg.sender, "Should be owner of character");
+
+        uint256 oldGlassesId = _glasses[characterId];
+        if (oldGlassesId > 0) {
+            gameItemContract.safeTransferFrom(address(this), msg.sender, oldGlassesId, 1, "");
         }
-        gameItemContract.safeTransferFrom(msg.sender, address(this), tokenId, 1, "");
-        _glasses[msg.sender] = tokenId;
-        emit GlassesChanged(msg.sender, oldTokenId, tokenId);
+        if (newGlassesId > 0) {
+            gameItemContract.safeTransferFrom(msg.sender, address(this), newGlassesId, 1, "");
+        }
+        _glasses[characterId] = newGlassesId;
+
+        emit ShoesChanged(characterId, oldGlassesId, newGlassesId);
     }
-    function getGlasses(address owner) public view returns(uint256) {
-        return _glasses[owner];
+    function getGlasses(uint256 characterId) public view returns(uint256) {
+        return _glasses[characterId];
     }
     function _isGlasses(uint256 tokenId) internal pure returns(bool) {
         if (tokenId <= 0x0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
