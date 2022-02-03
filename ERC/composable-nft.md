@@ -16,7 +16,7 @@ In order for this standart to work, tokenId space for NFTs and FTs should be spl
 
 ## Specification
 
-´´´
+```solidity
 pragma solidity ^0.5.9;
 
 /**
@@ -83,7 +83,7 @@ interface ERC1155 /* is ERC165 */ {
 }
 
 
-´´´
+```
 
 ### Token Id Space
 
@@ -92,7 +92,7 @@ The top 128 bits of the uint256 _id parameter in any ERC-1155 function MAY repre
 Non-fungible tokens can be interacted with using an index based accessor into the contract/token data set. Therefore to access a particular token set within a mixed data contract and a particular non-fungible within that set, _id could be passed as <uint128: base token id><uint128: index of non-fungible>.
 
 
-´´´
+```
 uint256 baseTokenNFT = 12345 << 128;
 uint128 indexNFT = 50;
 
@@ -101,4 +101,4 @@ uint256 baseTokenFT = 54321 << 128;
 balanceOf(baseTokenNFT, msg.sender); // Get balance of the base token for non-fungible set 12345 (this MAY be used to get balance of the user for all of this token set if the implementation wishes as a convenience).
 balanceOf(baseTokenNFT + indexNFT, msg.sender); // Get balance of the token at index 50 for non-fungible set 12345 (should be 1 if user owns the individual non-fungible token or 0 if they do not).
 balanceOf(baseTokenFT, msg.sender); // Get balance of the fungible base token 54321.
-´´´
+```
