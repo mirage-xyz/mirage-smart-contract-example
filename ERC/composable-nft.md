@@ -25,9 +25,9 @@ pragma solidity ^0.5.9;
 interface ERC1155 /* is ERC165 */ {
     /**
         @dev This
-        The `_slotId` argument MUST be an id that defines parent and child id patterns
-        The `_max` argument MUST be the maximum count for shild items.
-        The `_min` argument MUST be the minimum count for shild items.
+        The _slotId argument MUST be an id that defines parent and child id patterns
+        The _max argument MUST be the maximum count for shild items.
+        The _min argument MUST be the minimum count for shild items.
     */
     event SlotAdded(uint256 indexed _slotId, uint256 indexed _max, uint256 indexed _min);
 
