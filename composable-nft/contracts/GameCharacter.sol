@@ -24,6 +24,31 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     Counters.Counter private _tokenIdCounter;
 
+
+    struct Rental {
+        bool isActive;
+        address lord;
+        address renter;
+        uint256 expiresAt;
+    }
+
+    mapping(uint256 => Rental) public rental;
+
+    event Rented(
+        uint256 indexed tokenId,
+        address indexed lord,
+        address indexed renter,
+        uint256 expiresAt
+    );
+
+    event FinishedRent(
+        uint256 indexed tokenId,
+        address indexed lord,
+        address indexed renter,
+        uint256 expiresAt
+    );
+
+
     constructor(address gameItemContractAddress) ERC721("GameCharacter", "CHARACTER") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
@@ -128,12 +153,52 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
 
 
 
-    // The following functions are overrides required by Solidity.
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
-        internal
-        override(ERC721, ERC721Enumerable)
-    {
+    function rentOut(
+        address renter,
+        uint256 tokenId,
+        uint256 expiresAt
+    ) external {
+        _transfer(msg.sender, renter, tokenId);
+
+        rental[tokenId] = Rental({
+            isActive: true,
+            lord: msg.sender,
+            renter: renter,
+            expiresAt: expiresAt
+        });
+
+        emit Rented(tokenId, msg.sender, renter, expiresAt);
+    }
+
+    function finishRenting(uint256 tokenId) external {
+        Rental storage _rental = rental[tokenId];
+
+        require(
+            msg.sender == _rental.renter ||
+                block.timestamp >= _rental.expiresAt,
+            "RentableNFT: this token is rented"
+        );
+
+        _rental.isActive = false;
+
+        _transfer(_rental.renter, _rental.lord, tokenId);
+
+        emit FinishedRent(
+            tokenId,
+            _rental.lord,
+            _rental.renter,
+            _rental.expiresAt
+        );
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal override(ERC721, ERC721Enumerable) {
+        require(!rental[tokenId].isActive, "RentableNFT: this token is rented");
+
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
