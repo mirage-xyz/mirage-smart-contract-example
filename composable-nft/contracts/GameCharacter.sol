@@ -109,7 +109,7 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         }
         _glasses[characterId] = newGlassesId;
 
-        emit ShoesChanged(characterId, oldGlassesId, newGlassesId);
+        emit GlassesChanged(characterId, oldGlassesId, newGlassesId);
     }
     function getGlasses(uint256 characterId) public view returns(uint256) {
         return _glasses[characterId];
