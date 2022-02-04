@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+    <title>Mirage</title>
+
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" />
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"></script>
+    <script src="https://unpkg.com/vue@latest/dist/vue.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.0.1/bignumber.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="./web3.min.js"></script>
+    <script src="./blockchain.js"></script>
+    <script src="./abis.js"></script>
+  </head>
+  <body>
+
+<div id="app" v-if="bData">
+  <b-container>
+    <b-navbar toggleable="lg">
+      <b-navbar-brand href="#">Mirage NFT Demo</b-navbar-brand>
+      <div style="flex: 1">
+
+      </div>
+      <b-nav-text right>
+        {{ bData.account }}
+      </b-nav-text>
+    </b-navbar>
+
+    <b-card no-body>
+      <div class="row">
+        <div class="col-6" style="font-size: 24px;">
+          <p class="mt-4 ml-4"><b>My Chaacters:</b></p>
+
+          <b-table :items="characters" :busy="isCharactersLoading" :fields="characterFields" class="mt-3 mx-2" outlined @row-clicked="selectCharacter" :tbody-tr-class="rowClass">
+            <template #table-busy>
+              <div class="text-center text-danger my-2">
+                <b-spinner class="align-middle"></b-spinner>
+                <strong>Loading...</strong>
+              </div>
+            </template>
+            <template #cell(name)="data">
+              {{ data.item.name }}
+            </template>
+            <template #cell(characterId)="data">
+              {{ data.item.characterId }}
+            </template>
+            <template #empty="scope">
+              <h4>No characters found</h4>
+            </template>
+          </b-table>
+
+          <p class="mt-4 ml-4"><b>My Items:</b></p>
+
+          <b-table :items="items" :busy="isItemsLoading" :fields="itemFields" class="mt-3 mx-2" outlined>
+            <template #table-busy>
+              <div class="text-center text-danger my-2">
+                <b-spinner class="align-middle"></b-spinner>
+                <strong>Loading...</strong>
+              </div>
+            </template>
+            <template #cell(type)="data">
+              {{ data.item.type }}
+            </template>
+            <template #cell(amount)="data">
+              {{ data.item.amount }}
+            </template>
+            <template #empty="scope">
+              <h4>No items found</h4>
+            </template>
+          </b-table>
+
+        </div>
+        <div class="col-6">
+          <p class="mt-4 ml-4"><b>Character Info:</b></p>
+          <div v-if="currentCharacter">
+            <table class="table mx-4" style="width: 80%">
+              <tr>
+                <td>Hat</td>
+                <td>{{ getItemText(currentCharacter.hat) }}</td>
+                <td><b-button @click="openChangeModal('Hat')" size="sm">Change</b-button></td>
+              </tr>
+              <tr>
+                <td>Shoes</td>
+                <td>{{ getItemText(currentCharacter.shoes) }}</td>
+                <td><b-button @click="openChangeModal('Shoes')" size="sm">Change</b-button></td>
+              </tr>
+              <tr>
+                <td>Glasses</td>
+                <td>{{ getItemText(currentCharacter.glasses) }}</td>
+                <td><b-button @click="openChangeModal('Glasses')" size="sm">Change</b-button></td>
+              </tr>
+            </table>
+            <div style="text-align: right; width: 80%;">
+              <b-button @click="" size="sm">Rent Character</b-button>
+              <b-button @click="openTransferModal()" size="sm">Transfer Character</b-button>
+            </div>
+          </div>
+          <div v-else>
+            ...
+          </div>
+        </div>
+      </div>
+    </b-card>
+
+    <b-modal ref="change_modal" :title="'Change ' + selectedItemType" hide-footer>
+      <b-form>
+  
+        <b-form-group id="input-group-3" label="Item type:" label-for="input-3">
+          <b-form-select
+            id="input-3"
+            v-model="itemType"
+            :options="itemTypes"
+            required
+          ></b-form-select>
+        </b-form-group>
+  
+        <div class="mt-2 text-right">
+          <b-button type="button" @click="$refs['change_modal'].hide()" variant="danger">Cancel</b-button>
+          <b-button type="submit" @click.prevent="changeItem" variant="primary">Submit</b-button>
+        </div>
+      </b-form>
+    </b-modal>
+
+    <b-modal ref="send_modal" :title="'Send Character'" hide-footer>
+      <b-form>
+        <b-form-group id="input-group-1" label="Recipient Address:" label-for="input-1">
+          <b-form-input
+            id="input-1"
+            v-model="recipientAddress"
+            type="text"
+            placeholder="0x..."
+            required
+          ></b-form-input>
+        </b-form-group>
+  
+        <div class="mt-2 text-right">
+          <b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>
+          <b-button type="submit" @click.prevent="sendCharacter" variant="primary">Transfer</b-button>
+        </div>
+      </b-form>
+    </b-modal>
+
+    <b-modal ref="alert_modal">
+      <pre>
+        {{ alertMessage }}
+      </pre>
+    </b-modal>
+  </b-container>
+</div>
+
+<script>
+  window.app = new Vue({
+    el: '#app',
+    data: {
+      bData: null,
+      
+      currentCharacter: null, /*{
+        characterId: '',
+        hat: '-',
+        shoes: '-',
+        glasses: '-',
+      },*/
+
+      recipientAddress: '',
+
+      itemType: 'None',
+      itemTypes: [
+        "None",
+        "Blue Hat",
+        "Red Hat",
+        "White Hat",
+        "Blue Shoes",
+        "Red Shoes",
+        "White Shoes",
+        "Blue Glasses",
+        "Red Glasses",
+        "White Glasses",
+      ],
+
+      alertMessage: '',
+
+      selectedItemType: '',
+
+      characterFields: ['name', 'characterId'],
+      characters: [],
+      isCharactersLoading: false,
+
+      itemFields: ['type', 'amount'],
+      items: [],
+      isItemsLoading: false,
+    },
+    async created() {
+      blockchain.onAccountsChanged = function() {
+        window.location.reload();
+      };
+      blockchain.onChainChanged = function() {
+        window.location.reload();
+      };
+      await blockchain.initWeb3();
+      this.bData = blockchain;
+      await this.loadCharacters();
+      await this.loadItems();
+    },
+    methods: {
+
+      async loadCharacters() {
+        this.isCharactersLoading = true;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var balance = + await gameCharacter.methods.balanceOf(blockchain.account).call();
+        var characters = [];
+        for (var i = 0; i < balance; i++) {
+          var c = await gameCharacter.methods.tokenOfOwnerByIndex(blockchain.account, i).call();
+          characters.push({
+            characterId: c,
+            name: 'Character ' + c
+          });
+        }
+        this.characters = characters;
+        this.isCharactersLoading = false;
+      },
+      async selectCharacter(item) {
+        this.currentCharacter = null;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var c = JSON.parse(JSON.stringify(item));
+        c.hat = await gameCharacter.methods.getHat(c.characterId).call();
+        c.shoes = await gameCharacter.methods.getShoes(c.characterId).call();
+        c.glasses = await gameCharacter.methods.getGlasses(c.characterId).call();
+        this.currentCharacter = c;
+      },
+      async loadItems() {
+        this.isItemsLoading = true;
+        var gameItem = await blockchain.getContract('GameItem', '0x26aFc7805Aa279fB0E806c2bc1e2bF37A70F995d');
+        var ids = [ '0x00010000000000000000000000000000000000000000000000000000000001', 
+                    '0x00010000000000000000000000000000000000000000000000000000000002', 
+                    '0x00010000000000000000000000000000000000000000000000000000000003',
+                    '0x00020000000000000000000000000000000000000000000000000000000001', 
+                    '0x00020000000000000000000000000000000000000000000000000000000002', 
+                    '0x00020000000000000000000000000000000000000000000000000000000003', 
+                    '0x00030000000000000000000000000000000000000000000000000000000001', 
+                    '0x00030000000000000000000000000000000000000000000000000000000002', 
+                    '0x00030000000000000000000000000000000000000000000000000000000003' ];
+        var accounts = Array(9).fill(blockchain.account);
+        var balances = await gameItem.methods.balanceOfBatch(accounts, ids).call();
+        var items = [];
+        for (var i = 0; i < balances.length; i++) {
+          items.push({
+            id: ids[i],
+            type: this.getItemText(ids[i]),
+            amount: balances[i]
+          });
+        }
+        console.log(items);
+        this.items = items;
+        this.isItemsLoading = false;
+      },
+
+      getItemText(id) {
+        console.log(id);
+        if (this.bData.web3) {
+          var hex = '0x' + this.bData.web3.utils.toBN(id).toString(16, 62);
+          switch(hex) {
+            case '0x00010000000000000000000000000000000000000000000000000000000001':
+              return 'Blue Hat';
+            case '0x00010000000000000000000000000000000000000000000000000000000002':
+              return 'Red Hat';
+            case '0x00010000000000000000000000000000000000000000000000000000000003':
+              return 'White Hat';
+            case '0x00020000000000000000000000000000000000000000000000000000000001':
+              return 'Blue Shoes';
+            case '0x00020000000000000000000000000000000000000000000000000000000002':
+              return 'Red Shoes';
+            case '0x00020000000000000000000000000000000000000000000000000000000003':
+              return 'White Shoes';
+            case '0x00030000000000000000000000000000000000000000000000000000000001':
+              return 'Blue Glasses';
+            case '0x00030000000000000000000000000000000000000000000000000000000002':
+              return 'Red Glasses';
+            case '0x00030000000000000000000000000000000000000000000000000000000003':
+              return 'White Glasses';
+          }
+        }
+        return '-------';
+      },
+
+
+
+      openChangeModal(type) {
+        var itemTypes = [
+          "Blue Hat",
+          "Red Hat",
+          "White Hat",
+          "Blue Shoes",
+          "Red Shoes",
+          "White Shoes",
+          "Blue Glasses",
+          "Red Glasses",
+          "White Glasses",
+        ];
+        this.itemTypes = ['None'].concat(itemTypes.filter(i => i.includes(type)));
+        this.selectedItemType = type;
+        this.$refs['change_modal'].show();
+      },
+      async changeItem() {
+        this.showAlert('Connecting Wallet...');
+        var isNone = this.itemType == 'None';
+        var isBlue = this.itemType.includes('Blue');
+        var isRed = this.itemType.includes('Red');
+        var isWhite = this.itemType.includes('White');
+        var number = isBlue ? 1 : isRed ? 2 : isWhite ? 3 : 0;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        if (this.selectedItemType == 'Hat') {
+          var id = isNone ? '0' : ('0x0001000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeHat(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        } else if (this.selectedItemType == 'Shoes') {
+          var id = isNone ? '0' : ('0x0002000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeShoes(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        } else if (this.selectedItemType == 'Glasses') {
+          var id = isNone ? '0' : ('0x0003000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeGlasses(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        }
+        window.location.reload();
+      },
+
+
+      openTransferModal() {
+        this.$refs['send_modal'].show();
+      },
+      async sendCharacter() {
+        console.log('aaaaaaaaaaaaaaaaa');
+        this.showAlert('Connecting Wallet...');
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        const tx = gameCharacter.methods.safeTransferFrom(blockchain.account, this.recipientAddress, this.currentCharacter.characterId);
+        this.showAlert('Please Wait...');
+        await tx.send({ from: blockchain.account, gas: 1000000 });
+        window.location.reload();
+      },
+
+      formatAmount(input) {
+        if ( ! input ) {
+          return '...';
+        }
+        var value = new BigNumber(input)
+        return value.shiftedBy(-18).toString();
+      },
+      showAlert(msg) {
+        console.log(msg);
+        this.alertMessage = msg;
+        this.$refs['alert_modal'].show();
+      },
+      rowClass(item, type) {
+        if (item && type === 'row') {
+          if (this.currentCharacter && item.characterId === this.currentCharacter.characterId) {
+            return 'table-primary'
+          } else {
+            return 'text-secondary cursor-pointer'
+          } 
+        } else {
+          return null
+        }
+      }
+      
+    },
+    computed: {
+      formattedTfbBalance() {
+        return this.formatAmount(this.tfbBalance);
+      },
+      formattedCeloBalance() {
+        return this.formatAmount(this.celoBalance);
+      },
+      formattedCUsdBalance() {
+        return this.formatAmount(this.cUsdBalance);
+      },
+      computedTransactionHistory() {
+        if (this.transactionHistory) {
+          return this.transactionHistory.map(t => {
+            return {
+              type: t.from.toLowerCase() == this.address.toLowerCase() ? 'send' : 'receive',
+              address: t.from.toLowerCase() == this.address ? t.to.toLowerCase() : t.from.toLowerCase(),
+              amount: t.value,
+              date: (moment(parseInt(t.timeStamp) * 1000)).fromNow(),
+            };
+          });
+        }
+        return [];
+      }
+    },
+    watch: {
+      tabIndex(tabIndex) {
+        if (tabIndex == 1) {
+          this.loadHistory();
+        }
+      }
+    }
+  })
+</script>
+
+<style>
+  .cursor-pointer {
+    cursor: pointer;
+  }
+</style>
+  </body>
+</html>
