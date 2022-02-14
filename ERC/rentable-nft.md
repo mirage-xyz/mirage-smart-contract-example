@@ -21,7 +21,7 @@ So if the most significant bit of the token id is 1 then that token is NFT.
 pragma solidity ^0.5.9;
 
 /**
-    @title ERC-1155 Composabile
+    @title ERC-1155 Rentable
  */
 interface ERC1155 /* is ERC165 */ {
     /**
@@ -53,7 +53,7 @@ interface ERC1155 /* is ERC165 */ {
 
     /**
         @notice finishRenting
-        @dev  Renter cen run this anytime but owner can run after expire time.
+        @dev  Renter can run this anytime but owner can run after expire time.
         @param tokenId: token id
     */
     function finishRenting(uint256 tokenId) external;
