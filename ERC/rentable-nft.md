@@ -18,7 +18,7 @@ This functionality will be usable for only NFT tokens. This requires that the co
 So if the most significant bit of the token id is 1 then that token is NFT.
 
 ```solidity
-pragma solidity ^0.5.9;
+pragma solidity ^0.8.0;
 
 /**
     @title ERC-1155 Rentable

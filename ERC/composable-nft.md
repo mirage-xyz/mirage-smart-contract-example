@@ -56,7 +56,7 @@ A slot id defines parent category and child category.
 ### Interface
 
 ```solidity
-pragma solidity ^0.5.9;
+pragma solidity ^0.8.0;
 
 /**
     @title ERC-1155 Composabile
