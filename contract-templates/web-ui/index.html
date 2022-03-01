@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+
+    <title>Mirage</title>
+
+    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@2.21.2/dist/bootstrap-vue.css" />
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver"></script>
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@2.21.2/dist/bootstrap-vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.0.1/bignumber.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="./web3.min.js"></script>
+    <script src="./blockchain.js"></script>
+    <script src="./artifacts/MirageERC20.js"></script>
+    <script src="./artifacts/MirageERC721.js"></script>
+    <script src="./artifacts/MirageERC721Rentable.js"></script>
+  </head>
+  <body>
+
+<div id="app" v-if="bData">
+  <b-container>
+    <b-navbar toggleable="lg">
+      <b-navbar-brand href="#">Mirage Contract Creator</b-navbar-brand>
+      <div style="flex: 1">
+
+      </div>
+      <b-nav-text right>
+        {{ bData.account }}
+      </b-nav-text>
+    </b-navbar>
+
+    <b-card no-body>
+      <b-tabs v-model="tabIndex" card>
+        <b-tab title="Deploy NFT Contract" active>
+          <b-form>
+            <b-form-group id="input-group-1" label="Name:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nft.name"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Symbol:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nft.symbol"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Image URL:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nft.image"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Description:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nft.description"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <div>
+              <b-form-checkbox
+                id="checkbox-1"
+                v-model="nft.isRentable"
+                name="checkbox-1"
+              >
+                Make It Rentable
+              </b-form-checkbox>
+            </div>
+
+            <div class="mt-2 text-right">
+              <!--<b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>-->
+              <b-button type="submit" @click.prevent="deployNft" variant="primary">Deploy</b-button>
+            </div>
+
+            <div class="mt-3">
+              Deployed contract: {{ nft.deployedAddress || '-' }}
+            </div>
+          </b-form>
+        </b-tab>
+        <b-tab title="Deploy Token Contract">
+          <b-form>
+            <b-form-group id="input-group-1" label="Name:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="token.name"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Symbol:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="token.symbol"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Premint Amount:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="token.premint"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            </b-form-group>
+
+            <div class="mt-2 text-right">
+              <!--<b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>-->
+              <b-button type="submit" @click.prevent="deployToken" variant="primary">Deploy</b-button>
+            </div>
+
+            <div class="mt-3">
+              Deployed contract: {{ token.deployedAddress || '-' }}
+            </div>
+          </b-form>
+        </b-tab>
+        <b-tab title="Mint NFT">
+          <b-form>
+            <b-form-group id="input-group-1" label="Contract Address:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.contract"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Account:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.account"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Image URL:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.image"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Description:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.description"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+
+            <div class="mt-2 text-right">
+              <!--<b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>-->
+              <b-button type="submit" @click.prevent="deployNft" variant="primary">Mint NFT</b-button>
+            </div>
+          </b-form>
+        </b-tab>
+        <b-tab title="Mint Tokens">
+          <b-form>
+            <b-form-group id="input-group-1" label="Contract Address:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.contract"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Account:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.account"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+            <b-form-group id="input-group-1" label="Amount:" label-for="input-1">
+              <b-form-input
+                id="input-1"
+                v-model="nftMint.amount"
+                type="text"
+                placeholder=""
+                required
+              ></b-form-input>
+            </b-form-group>
+
+            <div class="mt-2 text-right">
+              <!--<b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>-->
+              <b-button type="submit" @click.prevent="deployNft" variant="primary">Mint Token</b-button>
+            </div>
+          </b-form>
+        </b-tab>
+      </b-tabs>
+    </b-card>
+
+    <b-modal ref="change_modal" :title="'Change ' + selectedItemType" hide-footer>
+      <b-form>
+  
+        <b-form-group id="input-group-3" label="Item type:" label-for="input-3">
+          <b-form-select
+            id="input-3"
+            v-model="itemType"
+            :options="itemTypes"
+            required
+          ></b-form-select>
+        </b-form-group>
+  
+        <div class="mt-2 text-right">
+          <b-button type="button" @click="$refs['change_modal'].hide()" variant="danger">Cancel</b-button>
+          <b-button type="submit" @click.prevent="changeItem" variant="primary">Submit</b-button>
+        </div>
+      </b-form>
+    </b-modal>
+
+    <b-modal ref="send_modal" :title="'Send Character'" hide-footer>
+      <b-form>
+        <b-form-group id="input-group-1" label="Recipient Address:" label-for="input-1">
+          <b-form-input
+            id="input-1"
+            v-model="recipientAddress"
+            type="text"
+            placeholder="0x..."
+            required
+          ></b-form-input>
+        </b-form-group>
+  
+        <div class="mt-2 text-right">
+          <b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>
+          <b-button type="submit" @click.prevent="sendCharacter" variant="primary">Transfer</b-button>
+        </div>
+      </b-form>
+    </b-modal>
+
+    <b-modal ref="alert_modal">
+      <pre>
+        {{ alertMessage }}
+      </pre>
+    </b-modal>
+  </b-container>
+</div>
+
+<script>
+  window.app = new Vue({
+    el: '#app',
+    data: {
+      bData: null,
+
+      nft: {
+        name: '',
+        symbol: '',
+        image: '',
+        description: '',
+        isRentable: true,
+        deployedAddress: '',
+      },
+
+      token: {
+        name: '',
+        symbol: '',
+        premint: '',
+        deployedAddress: '',
+      },
+
+      tabIndex: 0,
+
+      
+      currentCharacter: null, /*{
+        characterId: '',
+        hat: '-',
+        shoes: '-',
+        glasses: '-',
+      },*/
+
+      recipientAddress: '',
+
+      alertMessage: '',
+
+      selectedItemType: '',
+
+      characterFields: ['name', 'characterId'],
+      characters: [],
+      isCharactersLoading: false,
+
+      itemFields: ['type', 'amount'],
+      items: [],
+      isItemsLoading: false,
+    },
+    async created() {
+      blockchain.onAccountsChanged = function() {
+        window.location.reload();
+      };
+      blockchain.onChainChanged = function() {
+        window.location.reload();
+      };
+      await blockchain.initWeb3();
+      this.bData = blockchain;
+      await this.loadCharacters();
+      await this.loadItems();
+    },
+    methods: {
+
+      async loadCharacters() {
+        this.isCharactersLoading = true;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var balance = + await gameCharacter.methods.balanceOf(blockchain.account).call();
+        var characters = [];
+        for (var i = 0; i < balance; i++) {
+          var c = await gameCharacter.methods.tokenOfOwnerByIndex(blockchain.account, i).call();
+          characters.push({
+            characterId: c,
+            name: 'Character ' + c
+          });
+        }
+        this.characters = characters;
+        this.isCharactersLoading = false;
+      },
+      async deployNft(item) {
+        this.currentCharacter = null;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var c = JSON.parse(JSON.stringify(item));
+        c.hat = await gameCharacter.methods.getHat(c.characterId).call();
+        c.shoes = await gameCharacter.methods.getShoes(c.characterId).call();
+        c.glasses = await gameCharacter.methods.getGlasses(c.characterId).call();
+        this.currentCharacter = c;
+      },
+      async deployToken(item) {
+        this.currentCharacter = null;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var c = JSON.parse(JSON.stringify(item));
+        c.hat = await gameCharacter.methods.getHat(c.characterId).call();
+        c.shoes = await gameCharacter.methods.getShoes(c.characterId).call();
+        c.glasses = await gameCharacter.methods.getGlasses(c.characterId).call();
+        this.currentCharacter = c;
+      },
+      async nftMint(item) {
+        this.currentCharacter = null;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        var c = JSON.parse(JSON.stringify(item));
+        c.hat = await gameCharacter.methods.getHat(c.characterId).call();
+        c.shoes = await gameCharacter.methods.getShoes(c.characterId).call();
+        c.glasses = await gameCharacter.methods.getGlasses(c.characterId).call();
+        this.currentCharacter = c;
+      },
+      async loadItems() {
+        this.isItemsLoading = true;
+        var gameItem = await blockchain.getContract('GameItem', '0x26aFc7805Aa279fB0E806c2bc1e2bF37A70F995d');
+        var ids = [ '0x00010000000000000000000000000000000000000000000000000000000001', 
+                    '0x00010000000000000000000000000000000000000000000000000000000002', 
+                    '0x00010000000000000000000000000000000000000000000000000000000003',
+                    '0x00020000000000000000000000000000000000000000000000000000000001', 
+                    '0x00020000000000000000000000000000000000000000000000000000000002', 
+                    '0x00020000000000000000000000000000000000000000000000000000000003', 
+                    '0x00030000000000000000000000000000000000000000000000000000000001', 
+                    '0x00030000000000000000000000000000000000000000000000000000000002', 
+                    '0x00030000000000000000000000000000000000000000000000000000000003' ];
+        var accounts = Array(9).fill(blockchain.account);
+        var balances = await gameItem.methods.balanceOfBatch(accounts, ids).call();
+        var items = [];
+        for (var i = 0; i < balances.length; i++) {
+          items.push({
+            id: ids[i],
+            type: this.getItemText(ids[i]),
+            amount: balances[i]
+          });
+        }
+        console.log(items);
+        this.items = items;
+        this.isItemsLoading = false;
+      },
+
+
+
+
+      openChangeModal(type) {
+        var itemTypes = [
+          "Blue Hat",
+          "Red Hat",
+          "White Hat",
+          "Blue Shoes",
+          "Red Shoes",
+          "White Shoes",
+          "Blue Glasses",
+          "Red Glasses",
+          "White Glasses",
+        ];
+        this.itemTypes = ['None'].concat(itemTypes.filter(i => i.includes(type)));
+        this.selectedItemType = type;
+        this.$refs['change_modal'].show();
+      },
+      async changeItem() {
+        this.showAlert('Connecting Wallet...');
+        var isNone = this.itemType == 'None';
+        var isBlue = this.itemType.includes('Blue');
+        var isRed = this.itemType.includes('Red');
+        var isWhite = this.itemType.includes('White');
+        var number = isBlue ? 1 : isRed ? 2 : isWhite ? 3 : 0;
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        if (this.selectedItemType == 'Hat') {
+          var id = isNone ? '0' : ('0x0001000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeHat(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        } else if (this.selectedItemType == 'Shoes') {
+          var id = isNone ? '0' : ('0x0002000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeShoes(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        } else if (this.selectedItemType == 'Glasses') {
+          var id = isNone ? '0' : ('0x0003000000000000000000000000000000000000000000000000000000000' + number);
+          const tx = gameCharacter.methods.changeGlasses(this.currentCharacter.characterId, id);
+          this.showAlert('Please Wait...');
+          await tx.send({ from: blockchain.account, gas: 1000000 });
+        }
+        window.location.reload();
+      },
+
+
+      openTransferModal() {
+        this.$refs['send_modal'].show();
+      },
+      async sendCharacter() {
+        console.log('aaaaaaaaaaaaaaaaa');
+        this.showAlert('Connecting Wallet...');
+        var gameCharacter = await blockchain.getContract('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+        const tx = gameCharacter.methods.safeTransferFrom(blockchain.account, this.recipientAddress, this.currentCharacter.characterId);
+        this.showAlert('Please Wait...');
+        await tx.send({ from: blockchain.account, gas: 1000000 });
+        window.location.reload();
+      },
+
+      formatAmount(input) {
+        if ( ! input ) {
+          return '...';
+        }
+        var value = new BigNumber(input)
+        return value.shiftedBy(-18).toString();
+      },
+      showAlert(msg) {
+        console.log(msg);
+        this.alertMessage = msg;
+        this.$refs['alert_modal'].show();
+      },
+      rowClass(item, type) {
+        if (item && type === 'row') {
+          if (this.currentCharacter && item.characterId === this.currentCharacter.characterId) {
+            return 'table-primary'
+          } else {
+            return 'text-secondary cursor-pointer'
+          } 
+        } else {
+          return null
+        }
+      }
+      
+    },
+    computed: {
+      formattedTfbBalance() {
+        return this.formatAmount(this.tfbBalance);
+      },
+      formattedCeloBalance() {
+        return this.formatAmount(this.celoBalance);
+      },
+      formattedCUsdBalance() {
+        return this.formatAmount(this.cUsdBalance);
+      },
+      computedTransactionHistory() {
+        if (this.transactionHistory) {
+          return this.transactionHistory.map(t => {
+            return {
+              type: t.from.toLowerCase() == this.address.toLowerCase() ? 'send' : 'receive',
+              address: t.from.toLowerCase() == this.address ? t.to.toLowerCase() : t.from.toLowerCase(),
+              amount: t.value,
+              date: (moment(parseInt(t.timeStamp) * 1000)).fromNow(),
+            };
+          });
+        }
+        return [];
+      }
+    },
+    watch: {
+      tabIndex(tabIndex) {
+        if (tabIndex == 1) {
+          this.loadHistory();
+        }
+      }
+    }
+  })
+</script>
+
+<style>
+  .cursor-pointer {
+    cursor: pointer;
+  }
+</style>
+  </body>
+</html>
