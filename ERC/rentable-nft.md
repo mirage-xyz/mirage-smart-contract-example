@@ -1,12 +1,12 @@
-# Renting Extension For ERC-1155 Standart
+# Renting Extension For NFTs
 
 ## Simple Summary
 
-An extension of the ERC-1155 standard to enable ERC1155 NFT tokens to be rentable 
+An extension for NFT smart contracts to enable tokens to be rentable. 
 
 ## Abstract
 
-This extension defines some extra functions to the ERC-1155 standart for renting NFT tokens to another account.
+This extension defines some extra functions to the ERC-721 and ERC-1155 standarts for renting NFT tokens to another account.
 This helps NFT owners to rent their assets to someone for some period of time. 
 Because an ERC-1155 contract can have fungible tokens (FT) and non-fungible tokens (NFT), this functionality will be usable by only NFTs.
 It's significantly important for the gaming industry where such NFTs might have additional abilities that affect the gaming process.
@@ -21,9 +21,9 @@ So if the most significant bit of the token id is 1 then that token is NFT.
 pragma solidity ^0.8.0;
 
 /**
-    @title ERC-1155 Rentable
+    @title ERC-721 Rentable (this can be applied to 1155)
  */
-interface ERC1155 /* is ERC165 */ {
+interface ERC721Rentable /* is ERC165 */ {
     /**
         @dev This event will be emitted when token is rented
         tokenId: token id to be rented
