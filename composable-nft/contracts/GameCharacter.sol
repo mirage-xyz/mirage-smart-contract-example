@@ -55,7 +55,7 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         gameItemContract = IERC1155(gameItemContractAddress);
     }
 
-    function safeMint(address to) public onlyRole(MINTER_ROLE) {
+    function safeMint(address to) public /*onlyRole(MINTER_ROLE)*/ {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
@@ -159,6 +159,7 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         uint256 tokenId,
         uint256 expiresAt
     ) external {
+        //  check for renting tokenId
         _transfer(msg.sender, renter, tokenId);
 
         rental[tokenId] = Rental({
