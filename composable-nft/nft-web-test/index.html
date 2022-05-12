@@ -19,6 +19,7 @@
     <script src="./web3.min.js"></script>
     <script src="./blockchain.js"></script>
     <script src="./abis.js"></script>
+    <script src="./opensea.js"></script>
   </head>
   <body>
 
@@ -37,7 +38,7 @@
     <b-card no-body>
       <div class="row">
         <div class="col-6" style="font-size: 24px;">
-          <p class="mt-4 ml-4"><b>My Chaacters:</b></p>
+          <p class="mt-4 ml-4"><b>My Characters:</b></p>
 
           <b-table :items="characters" :busy="isCharactersLoading" :fields="characterFields" class="mt-3 mx-2" outlined @row-clicked="selectCharacter" :tbody-tr-class="rowClass">
             <template #table-busy>
@@ -102,6 +103,19 @@
               <b-button @click="" size="sm">Rent Character</b-button>
               <b-button @click="openTransferModal()" size="sm">Transfer Character</b-button>
             </div>
+            <div>
+              <p class="mt-5 ml-4"><b>Opensea Info:</b></p>
+              <div v-if="sellOrders.length > 0" class="ml-4" style="font-size: 13px;" >
+                This item is already on sale. Price: {{formatAmount(sellOrders[0].currentPrice)}} ETH
+              </div>
+              <div v-if="sellOrders.length == 0"  class="ml-4" style="font-size: 13px;">
+                This item is not on sale.
+              </div>
+              <div style="text-align: right; width: 80%; margin-top: 10px;">
+                <b-button @click="openOpensea()" size="sm">See On Opensea</b-button>
+                <b-button @click="openSellModal()" size="sm">Sell On Opensea</b-button>
+              </div>
+            </div>
           </div>
           <div v-else>
             ...
@@ -144,6 +158,25 @@
         <div class="mt-2 text-right">
           <b-button type="button" @click="$refs['send_modal'].hide()" variant="danger">Cancel</b-button>
           <b-button type="submit" @click.prevent="sendCharacter" variant="primary">Transfer</b-button>
+        </div>
+      </b-form>
+    </b-modal>
+
+    <b-modal ref="sell_modal" :title="'Sell Character On Opensea'" hide-footer>
+      <b-form>
+        <b-form-group id="input-group-1" label="Sell Price:" label-for="input-1">
+          <b-form-input
+            id="input-1"
+            v-model="sellPrice"
+            type="text"
+            placeholder="ETH Price"
+            required
+          ></b-form-input>
+        </b-form-group>
+  
+        <div class="mt-2 text-right">
+          <b-button type="button" @click="$refs['sell_modal'].hide()" variant="danger">Cancel</b-button>
+          <b-button type="submit" @click.prevent="sellOpensea" variant="primary">Sell</b-button>
         </div>
       </b-form>
     </b-modal>
@@ -196,6 +229,9 @@
       itemFields: ['type', 'amount'],
       items: [],
       isItemsLoading: false,
+
+      sellOrders: [],
+      sellPrice: '',
     },
     async created() {
       blockchain.onAccountsChanged = function() {
@@ -234,6 +270,18 @@
         c.shoes = await gameCharacter.methods.getShoes(c.characterId).call();
         c.glasses = await gameCharacter.methods.getGlasses(c.characterId).call();
         this.currentCharacter = c;
+
+        const seaport = new OpenSeaPort(window.ethereum, {
+          networkName: Network.Rinkeby,
+          apiKey: ""
+        });
+
+        const asset = await seaport.api.getAsset({
+          tokenAddress: '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0', 
+          tokenId: this.currentCharacter.characterId, 
+        });
+        console.log(asset);
+        this.sellOrders = asset.sellOrders.filter(o => o.cancelledOrFinalized == false);
       },
       async loadItems() {
         this.isItemsLoading = true;
@@ -291,7 +339,6 @@
       },
 
 
-
       openChangeModal(type) {
         var itemTypes = [
           "Blue Hat",
@@ -347,6 +394,38 @@
         this.showAlert('Please Wait...');
         await tx.send({ from: blockchain.account, gas: 1000000 });
         window.location.reload();
+      },
+
+      openSellModal() {
+        this.$refs['sell_modal'].show();
+      },
+      openOpensea() {
+        window.open('https://testnets.opensea.io/assets/0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0/' + this.currentCharacter.characterId, '_blank');
+      },
+
+      async sellOpensea() {
+        const seaport = new OpenSeaPort(window.ethereum, {
+          networkName: Network.Rinkeby,
+          apiKey: ""
+        });
+        
+        const expirationTime = Math.round((Date.now() / 1000) + 60 * 60 * 24 * 7)
+
+        const listing = await seaport.createSellOrder({
+          asset: {
+            tokenAddress: '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0', 
+            tokenId: this.currentCharacter.characterId, 
+          },
+          accountAddress: blockchain.account,
+          startAmount: new BigNumber(this.sellPrice),
+          // If `endAmount` is specified, the order will decline in value to that amount until `expirationTime`. Otherwise, it's a fixed-price order:
+          //endAmount: 0.1,
+          expirationTime: expirationTime
+        });
+
+        console.log(listing);
+
+        window.open('https://testnets.opensea.io/assets/0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0/' + this.currentCharacter.characterId, '_blank');
       },
 
       formatAmount(input) {

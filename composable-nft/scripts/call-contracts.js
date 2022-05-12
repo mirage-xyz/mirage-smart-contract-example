@@ -15,11 +15,17 @@ const hre = require("hardhat");
     White Glasses = 0x00030000000000000000000000000000000000000000000000000000000003
 
 */
-
+/*
+OLD CONTRACTS
+GameItem = 0x26aFc7805Aa279fB0E806c2bc1e2bF37A70F995d
+GameCharacter = 0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0
+*/
 
 async function main() {
-  const gameItem = await hre.ethers.getContractAt('GameItem', '0x26aFc7805Aa279fB0E806c2bc1e2bF37A70F995d');
-  const gameCharacter = await hre.ethers.getContractAt('GameCharacter', '0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0');
+  const gameItemAddress = '0x5ff9214c724F2465C543eD6cdA0957dC96940aFe';
+  const gameCharacterAddress = '0xCF3723BD1569db783aAB388e91Dd84Eb2B159404';
+  const gameItem = await hre.ethers.getContractAt('GameItem', gameItemAddress);
+  const gameCharacter = await hre.ethers.getContractAt('GameCharacter', gameCharacterAddress);
 
   var [account] = await hre.ethers.getSigners();
   account = account.address;
@@ -52,13 +58,24 @@ async function main() {
   console.log('game character minted');
   console.log('transaction hash = ', tx.hash);
 
-  tx = await gameItem.setApprovalForAll('0x10555B832DE7bAD8459d6de1D8E8F5ad990709A0', true);
+  tx = await gameCharacter.safeMint(account);
+  await tx.wait();
+  console.log('game character minted');
+  console.log('transaction hash = ', tx.hash);
+
+  tx = await gameCharacter.safeMint(account);
+  await tx.wait();
+  console.log('game character minted');
+  console.log('transaction hash = ', tx.hash);
+
+  tx = await gameItem.setApprovalForAll(gameCharacterAddress, true);
   await tx.wait();
   console.log('game items approved');
   console.log('transaction hash = ', tx.hash);
 
   var tokenId = await gameCharacter.tokenOfOwnerByIndex(account, await gameCharacter.balanceOf(account) - 1);
   console.log('minted token = ', tokenId);
+  return;
 
   tx = await gameCharacter.changeHat(tokenId, '0x00010000000000000000000000000000000000000000000000000000000001', {gasLimit: 1000000});
   await tx.wait();
