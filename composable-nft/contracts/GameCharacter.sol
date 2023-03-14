@@ -46,19 +46,20 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         uint256 expiresAt
     );
 
-
     constructor(address gameItemContractAddress) ERC721("GameCharacter", "CHARACTER") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         gameItemContract = IERC1155(gameItemContractAddress);
     }
 
+    event SafeMinted(address indexed to);
     function safeMint(address to) public /*onlyRole(MINTER_ROLE)*/ {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
+        
+        emit SafeMinted(to);
     }
-
 
     ///////////////// Wearing Function ////////////////////
     event HatChanged(uint256 characterId, uint256 oldHatId, uint256 newHatId);
@@ -145,7 +146,6 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         }
         return false;
     }
-
 
     ////////////////////////////////////////////////////////
 
