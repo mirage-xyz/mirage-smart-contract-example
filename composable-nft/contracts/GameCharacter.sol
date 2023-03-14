@@ -10,8 +10,6 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "hardhat/console.sol";
 
-
-
 contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessControl, ERC1155Holder {
     using Counters for Counters.Counter;
 
@@ -151,9 +149,6 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
 
     ////////////////////////////////////////////////////////
 
-
-
-
     function rentOut(
         address renter,
         uint256 tokenId,
@@ -196,11 +191,12 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 batchSize
     ) internal override(ERC721, ERC721Enumerable) {
         require(!rental[tokenId].isActive, "RentableNFT: this token is rented");
 
-        super._beforeTokenTransfer(from, to, tokenId);
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
     function supportsInterface(bytes4 interfaceId)

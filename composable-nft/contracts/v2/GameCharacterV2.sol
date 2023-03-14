@@ -122,17 +122,6 @@ contract GameCharacterV2 is ERC721, ERC721Enumerable, ERC721Burnable, AccessCont
         require(found, "ERC721Parent: child could not be found in the slot.");
     }
 
-
-
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override(ERC721, ERC721Enumerable) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
     function supportsInterface(bytes4 interfaceId)
         public
         view
