@@ -1,6 +1,6 @@
-//usage example: 
+//Usage example: 
 //1. go to project root folder
-//2. use command node scripts/compile.js GameItem.sol GameCharacter.sol
+//2. use command `node scripts/compile.js GameItem.sol GameCharacter.sol`
 //3. compiled bytecode and abi should be saved in corresponding folders compiled-bytecode and compiled-abi
 
 const path = require('path')

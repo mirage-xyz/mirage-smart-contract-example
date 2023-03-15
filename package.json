@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.2",
+    "ethereumjs-wallet": "^1.0.2",
     "ethers": "^6.1.0",
     "hardhat": "^2.13.0",
     "solc": "^0.8.19"
