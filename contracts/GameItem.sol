@@ -28,6 +28,9 @@ contract GameItem is ERC1155, AccessControl, ERC1155Burnable, ERC1155Supply {
         public
         //onlyRole(MINTER_ROLE)
     {
+        require(id != 0, "Invalid token ID: 0");
+        require(amount != 0, "Invalid token amount: 0");
+        
         _mint(account, id, amount, data);
         
         emit SingleMinted(account, id, amount, data);
@@ -38,6 +41,13 @@ contract GameItem is ERC1155, AccessControl, ERC1155Burnable, ERC1155Supply {
         public
         //onlyRole(MINTER_ROLE)
     {
+        require(ids.length == amounts.length, "Mismatch between ids and amounts lengths");
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            require(ids[i] != 0, "Invalid token ID: 0");
+            require(amounts[i] != 0, "Invalid token amount: 0");
+        }
+        
         _mintBatch(to, ids, amounts, data);
 
         emit BatchMinted(to, ids, amounts, data);

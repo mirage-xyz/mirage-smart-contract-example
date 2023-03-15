@@ -64,7 +64,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     ///////////////// Wearing Function ////////////////////
     event HatChanged(uint256 characterId, uint256 oldHatId, uint256 newHatId);
     function changeHat(uint256 characterId, uint256 newHatId) public {
-        require(_isHat(newHatId), "Item should be a hat");
+        require(_exists(characterId), "Character does not exist");
+        require(newHatId == 0 || _isHat(newHatId), "Item should be a hat or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldHatId = _hats[characterId];
@@ -92,7 +93,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
 
     event ShoesChanged(uint256 characterId, uint256 oldShoesId, uint256 newShoesId);
     function changeShoes(uint256 characterId, uint256 newShoesId) public {
-        require(_isShoe(newShoesId), "Item should be shoes");
+        require(_exists(characterId), "Character does not exist");
+        require(newShoesId == 0 || _isShoe(newShoesId), "Item should be shoes or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldShoesId = _shoes[characterId];
@@ -121,7 +123,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     
     event GlassesChanged(uint256 characterId, uint256 oldGlassesId, uint256 newGlassesId);
     function changeGlasses(uint256 characterId, uint256 newGlassesId) public {
-        require(_isGlasses(newGlassesId), "Item should be glasses");
+        require(_exists(characterId), "Character does not exist");
+        require(newGlassesId == 0 || _isGlasses(newGlassesId), "Item should be glasses or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldGlassesId = _glasses[characterId];
@@ -154,7 +157,10 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         uint256 tokenId,
         uint256 expiresAt
     ) external {
-        //  check for renting tokenId
+        require(renter != msg.sender, "Cannot rent to yourself");
+        require(rental[tokenId].isActive == false, "Token is already rented");
+        require(expiresAt > block.timestamp, "Expiration time should be in the future");
+
         _transfer(msg.sender, renter, tokenId);
 
         rental[tokenId] = Rental({
@@ -170,10 +176,16 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     function finishRenting(uint256 tokenId) external {
         Rental storage _rental = rental[tokenId];
 
+        // Check if the caller is the renter or the lord
         require(
-            msg.sender == _rental.renter ||
-                block.timestamp >= _rental.expiresAt,
-            "RentableNFT: this token is rented"
+            msg.sender == _rental.renter || msg.sender == _rental.lord,
+            "Only the renter or the lord can finish renting"
+        );
+
+        // Check if the rent has expired
+        require(
+            block.timestamp >= _rental.expiresAt,
+            "Rent has not expired yet"
         );
 
         _rental.isActive = false;
