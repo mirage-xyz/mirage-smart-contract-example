@@ -1,3 +1,4 @@
+
 //Usage example: 
 //1. go to project root folder
 //2. use command `node scripts/compile.js GameItem.sol GameCharacter.sol`
@@ -6,14 +7,19 @@
 const path = require('path')
 const fs = require('fs')
 const solc = require('solc')
+const { getLibrariesUsedInContracts } = require('./utils');
 
-const nodeModulesUsedInContractsPrefixes = ['@openzeppelin', 'hardhat']
+const librariesUsedSet = getLibrariesUsedInContracts('contracts', 'node_modules');
+const librariesString = Array.from(librariesUsedSet).join(', ');
+console.log('Node libraries imported in contracts: ' + librariesString);
+
+const librariesUsedInContracts = Array.from(librariesUsedSet);
 
 const contractNames = process.argv.slice(2);
 
 const findImports = (importPath) => {
     try {
-        if(nodeModulesUsedInContractsPrefixes.some(prefix => importPath.startsWith(prefix)))
+        if(librariesUsedInContracts.some(prefix => importPath.startsWith(prefix)))
         {
             var resolvedPath = path.resolve(__dirname, '..', 'node_modules', importPath);
         }
@@ -29,7 +35,7 @@ const findImports = (importPath) => {
     }
 };
 
-const inputObj = {};
+const compilationInputObject = {};
 
 for(var i = 0; i < contractNames.length; i++)
 {
@@ -37,7 +43,7 @@ for(var i = 0; i < contractNames.length; i++)
     const contractPath = path.resolve(__dirname, '..', 'contracts', contractName);
     console.log('For contract ' + contractName + ' path is ' + contractPath);
     const source = fs.readFileSync(contractPath, 'utf8');
-    inputObj[contractName] = {
+    compilationInputObject[contractName] = {
         content: source
     };
     //console.log('For contract ' + contractName + ' source is \n ' + source);
@@ -45,7 +51,7 @@ for(var i = 0; i < contractNames.length; i++)
 
 const inputJSON = {
     language: 'Solidity',
-    sources: inputObj,
+    sources: compilationInputObject,
     settings: {
         outputSelection: {
             '*': {
@@ -100,6 +106,6 @@ for(var contractName of contractNames)
     if(stringyfiedAbi && stringyfiedAbi.length > 0)
     {
         fs.writeFileSync(abiPath, stringyfiedAbi);
-        console.log('for contract ' + contractName + ' abi saved to ' + stringyfiedAbi);
+        console.log('for contract ' + contractName + ' abi saved to ' + abiPath);
     }
 }

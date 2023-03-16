@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessControl, ERC1155Holder {
+contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessControl, ERC1155Holder, ReentrancyGuard {
     using Counters for Counters.Counter;
 
     IERC1155 gameItemContract;
@@ -47,9 +47,16 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     );
 
     constructor(address gameItemContractAddress) ERC721("GameCharacter", "CHARACTER") {
+        require(gameItemContractAddress != address(0), "GameCharacter: gameItemContractAddress cannot be the zero address");
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         gameItemContract = IERC1155(gameItemContractAddress);
+    }
+
+    // Add this function to the GameCharacter contract
+    function setGameItemContractAddress(address newGameItemContractAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newGameItemContractAddress != address(0), "GameCharacter: newGameItemContractAddress cannot be the zero address");
+        gameItemContract = IERC1155(newGameItemContractAddress);
     }
 
     event SafeMinted(address indexed to);
@@ -83,12 +90,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _hats[characterId];
     }
     function _isHat(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00010000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00010000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     event ShoesChanged(uint256 characterId, uint256 oldShoesId, uint256 newShoesId);
@@ -112,12 +115,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _shoes[characterId];
     }
     function _isShoe(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0002ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00020000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00020000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0002ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     
@@ -142,12 +141,8 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _glasses[characterId];
     }
     function _isGlasses(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00030000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00030000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     ////////////////////////////////////////////////////////

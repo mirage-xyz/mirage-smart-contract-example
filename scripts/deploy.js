@@ -31,7 +31,7 @@ const contractBaseNames = process.argv.slice(2);
 const abiDir = path.resolve(__dirname, '..', 'compiled-abi');
 const bytecodeDir = path.resolve(__dirname, '..', 'compiled-bytecode');
 
-const deploymentArgumentsDir = path.resolve(__dirname, '..', 'deployment-arguments');
+const deploymentArgumentsDir = path.resolve(__dirname, '..', 'deployment_arguments');
 
 const deployContract = async (contractBaseName, abi, bytecode) => {
 
@@ -47,7 +47,9 @@ const deployContract = async (contractBaseName, abi, bytecode) => {
         var deployArgumentStrings = [];
     }
     
-    const provider = new ethers.JsonRpcProvider(providerUrl);
+    console.log(`Contract deployment arguments: ${String(deployArgumentStrings)}`)
+    
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     
     const wallet = new ethers.Wallet(privateKey, provider);
 
@@ -56,7 +58,7 @@ const deployContract = async (contractBaseName, abi, bytecode) => {
     const estimatedGas = await provider.estimateGas({data: deployTransactionData});
     console.log(`for contract ${contractBaseName} estimated gas to deploy is ${estimatedGas}`);
     const contract = await factory.deploy(...deployArgumentStrings);
-    await contract.deployed();
+    await contract.deployTransaction.wait();
 
     return contract;
 };
@@ -73,13 +75,17 @@ contractBaseNames.forEach(async (contractBaseName) => {
 
         try {
             const contract = await deployContract(contractBaseName, abi, bytecode);
+            
             console.log(`Contract ${contractBaseName} successfully deployed:`);
             console.log(`- Address: ${contract.address}`);
+            const receipt = await contract.deployTransaction.wait();
             console.log(`- Transaction Hash: ${contract.deployTransaction.hash}`);
-            console.log(`- Gas Used: ${contract.deployTransaction.gasUsed.toString()}`);
-
+            console.log(`- Gas Used: ${receipt.gasUsed.toString()}`);
             // Save deployment information to the deployment_log.txt
-            const deploymentInfo = `Contract ${contractBaseName} | Address: ${contract.address} | Transaction Hash: ${contract.deployTransaction.hash} | Gas Used: ${contract.deployTransaction.gasUsed.toString()}\n`;
+            const currentTime = new Date().toISOString();
+            const deploymentInfo = `Contract ${contractBaseName} | Address: ${contract.address} 
+            | Transaction Hash: ${contract.deployTransaction.hash} 
+            | Gas Used: ${receipt.gasUsed} | Timestamp: ${currentTime}\n`;
             fs.appendFileSync(deploymentLogPath, deploymentInfo);
         
         } catch (error) {

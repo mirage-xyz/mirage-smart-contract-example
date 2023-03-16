@@ -18,6 +18,8 @@ contract GameItem is ERC1155, AccessControl, ERC1155Burnable, ERC1155Supply {
 
     event URISet(string indexed uri);
     function setURI(string memory newuri) public onlyRole(URI_SETTER_ROLE) {
+        require(bytes(newuri).length > 0, "GameItem: URI cannot be an empty string");
+        
         _setURI(newuri);
         
         emit URISet(newuri);
