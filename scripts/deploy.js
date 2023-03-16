@@ -31,13 +31,31 @@ const contractBaseNames = process.argv.slice(2);
 const abiDir = path.resolve(__dirname, '..', 'compiled-abi');
 const bytecodeDir = path.resolve(__dirname, '..', 'compiled-bytecode');
 
-const deployContract = async (abi, bytecode) => {
+const deploymentArgumentsDir = path.resolve(__dirname, '..', 'deployment-arguments');
+
+const deployContract = async (contractBaseName, abi, bytecode) => {
+
+    const deploymentArgumentsFilePath = path.join(deploymentArgumentsDir, `${contractBaseName}.txt`);
+    
+    if(fs.existsSync(deploymentArgumentsFilePath))
+    {
+        const deploymentArgsString = fs.readFileSync(deploymentArgumentsFilePath, 'utf8');
+        var deployArgumentStrings = deploymentArgsString.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    }
+    else
+    {
+        var deployArgumentStrings = [];
+    }
+    
     const provider = new ethers.JsonRpcProvider(providerUrl);
     
     const wallet = new ethers.Wallet(privateKey, provider);
 
     const factory = new ethers.ContractFactory(abi, bytecode, wallet);
-    const contract = await factory.deploy();
+    deployTransactionData = (await factory.getDeployTransaction(...deployArgumentStrings)).data;
+    const estimatedGas = await provider.estimateGas({data: deployTransactionData});
+    console.log(`for contract ${contractBaseName} estimated gas to deploy is ${estimatedGas}`);
+    const contract = await factory.deploy(...deployArgumentStrings);
     await contract.deployed();
 
     return contract;
@@ -54,7 +72,7 @@ contractBaseNames.forEach(async (contractBaseName) => {
         const bytecode = fs.readFileSync(bytecodePath, 'utf8');
 
         try {
-            const contract = await deployContract(abi, bytecode);
+            const contract = await deployContract(contractBaseName, abi, bytecode);
             console.log(`Contract ${contractBaseName} successfully deployed:`);
             console.log(`- Address: ${contract.address}`);
             console.log(`- Transaction Hash: ${contract.deployTransaction.hash}`);
