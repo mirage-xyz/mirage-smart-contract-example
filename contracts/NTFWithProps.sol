@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+﻿// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.2;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -18,18 +18,18 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
 
     string private constant SIGNING_DOMAIN = "NFT With Props";
     string private constant SIGNATURE_VERSION = "1";
-    
+
     Counters.Counter private tokenIdCounter;
-    
+
     struct Item {
         uint256 itemType; //should be non-zero
         uint256 strength;
         uint256 level;
     }
-    
+
     mapping(uint256 => Item) private tokenDetails;
 
-    constructor() 
+    constructor()
     ERC721("NFT With Props", "NFTP")
     EIP712(SIGNING_DOMAIN, SIGNATURE_VERSION) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -38,7 +38,7 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
     }
 
     // Mınter can mint any token
-    function mintToken(address to, Item calldata item) public onlyRole(MINTER_ROLE) {
+    function mintToken(address to, Item calldata item) public /*onlyRole(MINTER_ROLE)*/ {
         uint256 tokenId = tokenIdCounter.current();
         tokenIdCounter.increment();
         _safeMint(to, tokenId);
@@ -63,8 +63,9 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
 
     // mint with a signed message coming from a minter
     function mintTokenWithSignedMessage(address to, ItemInfo calldata itemInfo) public {
-        address signer = _verifyItemInfo(itemInfo);
-        require(hasRole(MINTER_ROLE, signer), "Signature invalid");
+        //role requirement commented out so that users could test it with engine SDK without the need to redeploy
+        //address signer = _verifyItemInfo(itemInfo);
+        //require(hasRole(MINTER_ROLE, signer), "Signature invalid");
         require(itemInfo.expireTime > block.timestamp, "Voucher expired");
 
         uint256 tokenId = tokenIdCounter.current();
@@ -76,9 +77,11 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
     // update token with a signed message coming from a updater
     function updateTokenWithSignedMessage(ItemInfo calldata itemInfo) public {
         address signer = _verifyItemInfo(itemInfo);
-        require(hasRole(UPDATER_ROLE, signer), "Signature invalid");
+        //role requirement commented out so that users could test it with engine SDK without the need to redeploy
+        //require(hasRole(UPDATER_ROLE, signer), "Signature invalid");
         require(itemInfo.expireTime > block.timestamp, "Voucher expired");
         require(tokenDetails[itemInfo.tokenId].itemType > 0, "Token does not exist");
+        require(ownerOf(itemInfo.tokenId) == signer, "Signer does not own the token");
 
         tokenDetails[itemInfo.tokenId] = Item(itemInfo.itemType, itemInfo.strength, itemInfo.level);
     }
@@ -87,18 +90,19 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
     ///// verification functions //////////
     function _hashItemInfo(ItemInfo calldata voucher) internal view returns (bytes32) {
         return _hashTypedDataV4(
-                    keccak256(
-                        abi.encode(
-                            keccak256("ItemInfo(uint256 tokenId,uint256 itemType,uint256 strength,uint256 level,uint256 expireTime)"),
-                            voucher.tokenId,
-                            voucher.itemType,
-                            voucher.strength,
-                            voucher.level,
-                            voucher.expireTime
-                        )
-                    )
-                );
+            keccak256(
+                abi.encode(
+                    keccak256("ItemInfo(uint256 tokenId,uint256 itemType,uint256 strength,uint256 level,uint256 expireTime)"),
+                    voucher.tokenId,
+                    voucher.itemType,
+                    voucher.strength,
+                    voucher.level,
+                    voucher.expireTime
+                )
+            )
+        );
     }
+
     function _verifyItemInfo(ItemInfo calldata voucher) internal view returns (address) {
         bytes32 digest = _hashItemInfo(voucher);
         return ECDSA.recover(digest, voucher.signature);
@@ -117,10 +121,10 @@ contract NFTWithProps is ERC721, ERC721Enumerable, AccessControl, ERC721Burnable
     // The following functions are overrides required by Solidity.
 
     function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable, AccessControl)
-        returns (bool)
+    public
+    view
+    override(ERC721, ERC721Enumerable, AccessControl)
+    returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }

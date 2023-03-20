@@ -1,0 +1,1 @@
+Contract GameCharacter | Address: 0xcB83C6c54988b639F5e62f42BBE6758d17dEFbC4 | Transaction Hash: 0xe22f5302da29b7d52da15cd2bbb87e4d13583f96c4988baaf869e9d7fc38f24c | Gas Used: 5120167

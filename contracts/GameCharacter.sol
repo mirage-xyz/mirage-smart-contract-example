@@ -8,11 +8,9 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
-
-contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessControl, ERC1155Holder {
+contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessControl, ERC1155Holder, ReentrancyGuard {
     using Counters for Counters.Counter;
 
     IERC1155 gameItemContract;
@@ -48,24 +46,33 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         uint256 expiresAt
     );
 
-
     constructor(address gameItemContractAddress) ERC721("GameCharacter", "CHARACTER") {
+        require(gameItemContractAddress != address(0), "GameCharacter: gameItemContractAddress cannot be the zero address");
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         gameItemContract = IERC1155(gameItemContractAddress);
     }
 
+    // Add this function to the GameCharacter contract
+    function setGameItemContractAddress(address newGameItemContractAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newGameItemContractAddress != address(0), "GameCharacter: newGameItemContractAddress cannot be the zero address");
+        gameItemContract = IERC1155(newGameItemContractAddress);
+    }
+
+    event SafeMinted(address indexed to);
     function safeMint(address to) public /*onlyRole(MINTER_ROLE)*/ {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
+        
+        emit SafeMinted(to);
     }
-
 
     ///////////////// Wearing Function ////////////////////
     event HatChanged(uint256 characterId, uint256 oldHatId, uint256 newHatId);
     function changeHat(uint256 characterId, uint256 newHatId) public {
-        require(_isHat(newHatId), "Item should be a hat");
+        require(_exists(characterId), "Character does not exist");
+        require(newHatId == 0 || _isHat(newHatId), "Item should be a hat or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldHatId = _hats[characterId];
@@ -83,17 +90,14 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _hats[characterId];
     }
     function _isHat(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00010000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00010000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     event ShoesChanged(uint256 characterId, uint256 oldShoesId, uint256 newShoesId);
     function changeShoes(uint256 characterId, uint256 newShoesId) public {
-        require(_isShoe(newShoesId), "Item should be shoes");
+        require(_exists(characterId), "Character does not exist");
+        require(newShoesId == 0 || _isShoe(newShoesId), "Item should be shoes or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldShoesId = _shoes[characterId];
@@ -111,18 +115,15 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _shoes[characterId];
     }
     function _isShoe(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0002ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00020000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00020000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0002ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
     
     event GlassesChanged(uint256 characterId, uint256 oldGlassesId, uint256 newGlassesId);
     function changeGlasses(uint256 characterId, uint256 newGlassesId) public {
-        require(_isGlasses(newGlassesId), "Item should be glasses");
+        require(_exists(characterId), "Character does not exist");
+        require(newGlassesId == 0 || _isGlasses(newGlassesId), "Item should be glasses or 0"); //0 stands for unequip action
         require(ownerOf(characterId) == msg.sender, "Should be owner of character");
 
         uint256 oldGlassesId = _glasses[characterId];
@@ -140,26 +141,21 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
         return _glasses[characterId];
     }
     function _isGlasses(uint256 tokenId) internal pure returns(bool) {
-        if (tokenId <= 0x0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-           && tokenId >= 0x00030000000000000000000000000000000000000000000000000000000000
-        ) {
-               return true;
-        }
-        return false;
+        return (tokenId >= 0x00030000000000000000000000000000000000000000000000000000000000 
+        && tokenId <= 0x0003ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
     }
 
-
     ////////////////////////////////////////////////////////
-
-
-
 
     function rentOut(
         address renter,
         uint256 tokenId,
         uint256 expiresAt
     ) external {
-        //  check for renting tokenId
+        require(renter != msg.sender, "Cannot rent to yourself");
+        require(rental[tokenId].isActive == false, "Token is already rented");
+        require(expiresAt > block.timestamp, "Expiration time should be in the future");
+
         _transfer(msg.sender, renter, tokenId);
 
         rental[tokenId] = Rental({
@@ -175,10 +171,16 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     function finishRenting(uint256 tokenId) external {
         Rental storage _rental = rental[tokenId];
 
+        // Check if the caller is the renter or the lord
         require(
-            msg.sender == _rental.renter ||
-                block.timestamp >= _rental.expiresAt,
-            "RentableNFT: this token is rented"
+            msg.sender == _rental.renter || msg.sender == _rental.lord,
+            "Only the renter or the lord can finish renting"
+        );
+
+        // Check if the rent has expired
+        require(
+            block.timestamp >= _rental.expiresAt,
+            "Rent has not expired yet"
         );
 
         _rental.isActive = false;
@@ -196,11 +198,12 @@ contract GameCharacter is ERC721, ERC721Enumerable, ERC721Burnable, AccessContro
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId
+        uint256 tokenId,
+        uint256 batchSize
     ) internal override(ERC721, ERC721Enumerable) {
         require(!rental[tokenId].isActive, "RentableNFT: this token is rented");
 
-        super._beforeTokenTransfer(from, to, tokenId);
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
     function supportsInterface(bytes4 interfaceId)
