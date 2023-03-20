@@ -23,7 +23,7 @@ Each constructor argument is represented by a new line within the arguments text
 | `address` | a string | 
 | `uint256` | a numeric string (e.g., '42') | 
 | `byte` | a string representing a single byte in hex format (e.g., '0x1A') | 
-| `bytes` | a string representing a byte array in hexadecimal format (e.g., '0x1A2B3C' | 
+| `bytes` | a string representing a byte array in hex format (e.g., '0x1A2B3C') | 
 | `uint256[]` | a string representing of numeric strings "['42', '100']" | 
 
 Warning: The `uint256[]` implementation is NOT FINISHED, might need a runtime conversion from a string to an array of strings.
